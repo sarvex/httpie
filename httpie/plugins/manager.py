@@ -36,8 +36,7 @@ class PluginManager(object):
         return [plugin for plugin in self if issubclass(plugin, AuthPlugin)]
 
     def get_auth_plugin_mapping(self):
-        return dict((plugin.auth_type, plugin)
-                    for plugin in self.get_auth_plugins())
+        return {plugin.auth_type: plugin for plugin in self.get_auth_plugins()}
 
     def get_auth_plugin(self, auth_type):
         return self.get_auth_plugin_mapping()[auth_type]
@@ -48,12 +47,13 @@ class PluginManager(object):
                 if issubclass(plugin, FormatterPlugin)]
 
     def get_formatters_grouped(self):
-        groups = {}
-        for group_name, group in groupby(
+        return {
+            group_name: list(group)
+            for group_name, group in groupby(
                 self.get_formatters(),
-                key=lambda p: getattr(p, 'group_name', 'format')):
-            groups[group_name] = list(group)
-        return groups
+                key=lambda p: getattr(p, 'group_name', 'format'),
+            )
+        }
 
     def get_converters(self):
         return [plugin for plugin in self

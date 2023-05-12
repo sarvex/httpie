@@ -11,7 +11,7 @@ def test_Host_header_overwrite(httpbin):
 
     """
     host = 'httpbin.org'
-    url = httpbin.url + '/get'
+    url = f'{httpbin.url}/get'
     r = http('--print=hH', url, 'host:{0}'.format(host))
     assert HTTP_OK in r
     assert r.lower().count('host:') == 1
@@ -24,4 +24,4 @@ def test_output_devnull(httpbin):
     https://github.com/jakubroztocil/httpie/issues/252
 
     """
-    http('--output=/dev/null', httpbin + '/get')
+    http('--output=/dev/null', f'{httpbin}/get')

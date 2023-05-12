@@ -42,8 +42,9 @@ class HTTPieHelpFormatter(RawDescriptionHelpFormatter):
 
 parser = Parser(
     formatter_class=HTTPieHelpFormatter,
-    description='%s <http://httpie.org>' % __doc__.strip(),
-    epilog=dedent("""
+    description=f'{__doc__.strip()} <http://httpie.org>',
+    epilog=dedent(
+        """
     For every --OPTION there is also a --no-OPTION that reverts OPTION
     to its default value.
 
@@ -51,7 +52,8 @@ parser = Parser(
 
         https://github.com/jakubroztocil/httpie/issues
 
-    """)
+    """
+    ),
 )
 
 
@@ -400,27 +402,32 @@ auth.add_argument(
     '--auth-type',
     choices=[plugin.auth_type for plugin in _auth_plugins],
     default=_auth_plugins[0].auth_type,
-    help="""
+    help=(
+        """
     The authentication mechanism to be used. Defaults to "{default}".
 
     {types}
 
-    """
-    .format(default=_auth_plugins[0].auth_type, types='\n    '.join(
-        '"{type}": {name}{package}{description}'.format(
-            type=plugin.auth_type,
-            name=plugin.name,
-            package=(
-                '' if issubclass(plugin, BuiltinAuthPlugin)
-                else ' (provided by %s)' % plugin.package_name
+    """.format(
+            default=_auth_plugins[0].auth_type,
+            types='\n    '.join(
+                '"{type}": {name}{package}{description}'.format(
+                    type=plugin.auth_type,
+                    name=plugin.name,
+                    package=''
+                    if issubclass(plugin, BuiltinAuthPlugin)
+                    else f' (provided by {plugin.package_name})',
+                    description=(
+                        ''
+                        if not plugin.description
+                        else '\n      '
+                        + ('\n      '.join(wrap(plugin.description)))
+                    ),
+                )
+                for plugin in _auth_plugins
             ),
-            description=(
-                '' if not plugin.description else
-                '\n      ' + ('\n      '.join(wrap(plugin.description)))
-            )
         )
-        for plugin in _auth_plugins
-    )),
+    ),
 )
 
 

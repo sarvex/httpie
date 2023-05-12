@@ -9,8 +9,11 @@ import httpie.cli
 
 class TestAuth:
     def test_basic_auth(self, httpbin):
-        r = http('--auth=user:password',
-                 'GET', httpbin.url + '/basic-auth/user/password')
+        r = http(
+            '--auth=user:password',
+            'GET',
+            f'{httpbin.url}/basic-auth/user/password',
+        )
         assert HTTP_OK in r
         assert r.json == {'authenticated': True, 'user': 'user'}
 
@@ -18,21 +21,23 @@ class TestAuth:
         requests.__version__ == '0.13.6',
         reason='Redirects with prefetch=False are broken in Requests 0.13.6')
     def test_digest_auth(self, httpbin):
-        r = http('--auth-type=digest', '--auth=user:password',
-                 'GET', httpbin.url + '/digest-auth/auth/user/password')
+        r = http(
+            '--auth-type=digest',
+            '--auth=user:password',
+            'GET',
+            f'{httpbin.url}/digest-auth/auth/user/password',
+        )
         assert HTTP_OK in r
         assert r.json == {'authenticated': True, 'user': 'user'}
 
     def test_password_prompt(self, httpbin):
         httpie.input.AuthCredentials._getpass = lambda self, prompt: 'password'
-        r = http('--auth', 'user',
-                 'GET', httpbin.url + '/basic-auth/user/password')
+        r = http('--auth', 'user', 'GET', f'{httpbin.url}/basic-auth/user/password')
         assert HTTP_OK in r
         assert r.json == {'authenticated': True, 'user': 'user'}
 
     def test_credentials_in_url(self, httpbin):
-        url = add_auth(httpbin.url + '/basic-auth/user/password',
-                       auth='user:password')
+        url = add_auth(f'{httpbin.url}/basic-auth/user/password', auth='user:password')
         r = http('GET', url)
         assert HTTP_OK in r
         assert r.json == {'authenticated': True, 'user': 'user'}
@@ -40,8 +45,7 @@ class TestAuth:
     def test_credentials_in_url_auth_flag_has_priority(self, httpbin):
         """When credentials are passed in URL and via -a at the same time,
          then the ones from -a are used."""
-        url = add_auth(httpbin.url + '/basic-auth/user/password',
-                       auth='user:wrong')
+        url = add_auth(f'{httpbin.url}/basic-auth/user/password', auth='user:wrong')
         r = http('--auth=user:password', 'GET', url)
         assert HTTP_OK in r
         assert r.json == {'authenticated': True, 'user': 'user'}

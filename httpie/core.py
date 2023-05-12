@@ -190,8 +190,7 @@ def main(args=sys.argv[1:], env=Environment(), error=None):
         if hasattr(e, 'request'):
             request = e.request
             if hasattr(request, 'url'):
-                msg += ' while doing %s request to URL: %s' % (
-                    request.method, request.url)
+                msg += f' while doing {request.method} request to URL: {request.url}'
         error('%s: %s', type(e).__name__, msg)
         exit_status = ExitStatus.ERROR
 

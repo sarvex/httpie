@@ -95,7 +95,7 @@ class TestDownloads:
     # TODO: more tests
 
     def test_actual_download(self, httpbin):
-        url = httpbin.url + '/robots.txt'
+        url = f'{httpbin.url}/robots.txt'
         body = urlopen(url).read().decode()
         env = TestEnvironment(stdin_isatty=True, stdout_isatty=False)
         r = http('--download', url, env=env)
@@ -107,10 +107,7 @@ class TestDownloads:
     def test_download_with_Content_Length(self, httpbin):
         devnull = open(os.devnull, 'w')
         download = Download(output_file=devnull, progress_file=devnull)
-        download.start(Response(
-            url=httpbin.url + '/',
-            headers={'Content-Length': 10}
-        ))
+        download.start(Response(url=f'{httpbin.url}/', headers={'Content-Length': 10}))
         time.sleep(1.1)
         download.chunk_downloaded(b'12345')
         time.sleep(1.1)
@@ -121,7 +118,7 @@ class TestDownloads:
     def test_download_no_Content_Length(self, httpbin):
         devnull = open(os.devnull, 'w')
         download = Download(output_file=devnull, progress_file=devnull)
-        download.start(Response(url=httpbin.url + '/'))
+        download.start(Response(url=f'{httpbin.url}/'))
         time.sleep(1.1)
         download.chunk_downloaded(b'12345')
         download.finish()
@@ -130,10 +127,7 @@ class TestDownloads:
     def test_download_interrupted(self, httpbin):
         devnull = open(os.devnull, 'w')
         download = Download(output_file=devnull, progress_file=devnull)
-        download.start(Response(
-            url=httpbin.url + '/',
-            headers={'Content-Length': 5}
-        ))
+        download.start(Response(url=f'{httpbin.url}/', headers={'Content-Length': 5}))
         download.chunk_downloaded(b'1234')
         download.finish()
         assert download.interrupted

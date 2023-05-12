@@ -106,13 +106,13 @@ def filename_from_content_disposition(content_disposition):
     """
     # attachment; filename=jakubroztocil-httpie-0.4.1-20-g40bd8f6.tar.gz
 
-    msg = Message('Content-Disposition: %s' % content_disposition)
+    msg = Message(f'Content-Disposition: {content_disposition}')
     filename = msg.get_filename()
     if filename:
         # Basic sanitation.
         filename = os.path.basename(filename).lstrip('.').strip()
-        if filename:
-            return filename
+    if filename:
+        return filename
 
 
 def filename_from_url(url, content_type):
@@ -138,7 +138,7 @@ def filename_from_url(url, content_type):
 def get_unique_filename(filename, exists=os.path.exists):
     attempt = 0
     while True:
-        suffix = '-' + str(attempt) if attempt > 0 else ''
+        suffix = f'-{str(attempt)}' if attempt > 0 else ''
         if not exists(filename + suffix):
             return filename + suffix
         attempt += 1
@@ -181,8 +181,7 @@ class Download(object):
         # Disable content encoding so that we can resume, etc.
         request_headers['Accept-Encoding'] = None
         if self._resume:
-            bytes_have = os.path.getsize(self._output_file.name)
-            if bytes_have:
+            if bytes_have := os.path.getsize(self._output_file.name):
                 # Set ``Range`` header to resume the download
                 # TODO: Use "If-Range: mtime" to make sure it's fresh?
                 request_headers['Range'] = 'bytes=%d-' % bytes_have
@@ -248,11 +247,14 @@ class Download(object):
         )
 
         self._progress_reporter.output.write(
-            'Downloading %sto "%s"\n' % (
-                (humanize_bytes(total_size) + ' '
-                 if total_size is not None
-                 else ''),
-                self._output_file.name
+            (
+                'Downloading %sto "%s"\n'
+                % (
+                    f'{humanize_bytes(total_size)} '
+                    if total_size is not None
+                    else '',
+                    self._output_file.name,
+                )
             )
         )
         self._progress_reporter.start()

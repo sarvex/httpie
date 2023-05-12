@@ -7,21 +7,18 @@ from httpie.output.formatters.colors import get_lexer
 
 class TestVerboseFlag:
     def test_verbose(self, httpbin):
-        r = http('--verbose',
-                 'GET', httpbin.url + '/get', 'test-header:__test__')
+        r = http('--verbose', 'GET', f'{httpbin.url}/get', 'test-header:__test__')
         assert HTTP_OK in r
         assert r.count('__test__') == 2
 
     def test_verbose_form(self, httpbin):
         # https://github.com/jakubroztocil/httpie/issues/53
-        r = http('--verbose', '--form', 'POST', httpbin.url + '/post',
-                 'A=B', 'C=D')
+        r = http('--verbose', '--form', 'POST', f'{httpbin.url}/post', 'A=B', 'C=D')
         assert HTTP_OK in r
         assert 'A=B&C=D' in r
 
     def test_verbose_json(self, httpbin):
-        r = http('--verbose',
-                 'POST', httpbin.url + '/post', 'foo=bar', 'baz=bar')
+        r = http('--verbose', 'POST', f'{httpbin.url}/post', 'foo=bar', 'baz=bar')
         assert HTTP_OK in r
         assert '"baz": "bar"' in r
 
@@ -54,20 +51,20 @@ class TestPrettyOptions:
 
     def test_pretty_enabled_by_default(self, httpbin):
         env = TestEnvironment(colors=256)
-        r = http('GET', httpbin.url + '/get', env=env)
+        r = http('GET', f'{httpbin.url}/get', env=env)
         assert COLOR in r
 
     def test_pretty_enabled_by_default_unless_stdout_redirected(self, httpbin):
-        r = http('GET', httpbin.url + '/get')
+        r = http('GET', f'{httpbin.url}/get')
         assert COLOR not in r
 
     def test_force_pretty(self, httpbin):
         env = TestEnvironment(stdout_isatty=False, colors=256)
-        r = http('--pretty=all', 'GET', httpbin.url + '/get', env=env, )
+        r = http('--pretty=all', 'GET', f'{httpbin.url}/get', env=env)
         assert COLOR in r
 
     def test_force_ugly(self, httpbin):
-        r = http('--pretty=none', 'GET', httpbin.url + '/get')
+        r = http('--pretty=none', 'GET', f'{httpbin.url}/get')
         assert COLOR not in r
 
     def test_subtype_based_pygments_lexer_match(self, httpbin):
@@ -76,24 +73,40 @@ class TestPrettyOptions:
 
         """
         env = TestEnvironment(colors=256)
-        r = http('--print=B', '--pretty=all', httpbin.url + '/post',
-                 'Content-Type:text/foo+json', 'a=b', env=env)
+        r = http(
+            '--print=B',
+            '--pretty=all',
+            f'{httpbin.url}/post',
+            'Content-Type:text/foo+json',
+            'a=b',
+            env=env,
+        )
         assert COLOR in r
 
     def test_colors_option(self, httpbin):
         env = TestEnvironment(colors=256)
-        r = http('--print=B', '--pretty=colors',
-                 'GET', httpbin.url + '/get', 'a=b',
-                 env=env)
+        r = http(
+            '--print=B',
+            '--pretty=colors',
+            'GET',
+            f'{httpbin.url}/get',
+            'a=b',
+            env=env,
+        )
         # Tests that the JSON data isn't formatted.
         assert not r.strip().count('\n')
         assert COLOR in r
 
     def test_format_option(self, httpbin):
         env = TestEnvironment(colors=256)
-        r = http('--print=B', '--pretty=format',
-                 'GET', httpbin.url + '/get', 'a=b',
-                 env=env)
+        r = http(
+            '--print=B',
+            '--pretty=format',
+            'GET',
+            f'{httpbin.url}/get',
+            'a=b',
+            env=env,
+        )
         # Tests that the JSON data is formatted.
         assert r.strip().count('\n') == 2
         assert COLOR not in r
@@ -118,23 +131,23 @@ class TestLineEndings:
         return body
 
     def test_CRLF_headers_only(self, httpbin):
-        r = http('--headers', 'GET', httpbin.url + '/get')
+        r = http('--headers', 'GET', f'{httpbin.url}/get')
         body = self._validate_crlf(r)
         assert not body, 'Garbage after headers: %r' % r
 
     def test_CRLF_ugly_response(self, httpbin):
-        r = http('--pretty=none', 'GET', httpbin.url + '/get')
+        r = http('--pretty=none', 'GET', f'{httpbin.url}/get')
         self._validate_crlf(r)
 
     def test_CRLF_formatted_response(self, httpbin):
-        r = http('--pretty=format', 'GET', httpbin.url + '/get')
+        r = http('--pretty=format', 'GET', f'{httpbin.url}/get')
         assert r.exit_status == ExitStatus.OK
         self._validate_crlf(r)
 
     def test_CRLF_ugly_request(self, httpbin):
-        r = http('--pretty=none', '--print=HB', 'GET', httpbin.url + '/get')
+        r = http('--pretty=none', '--print=HB', 'GET', f'{httpbin.url}/get')
         self._validate_crlf(r)
 
     def test_CRLF_formatted_request(self, httpbin):
-        r = http('--pretty=format', '--print=HB', 'GET', httpbin.url + '/get')
+        r = http('--pretty=format', '--print=HB', 'GET', f'{httpbin.url}/get')
         self._validate_crlf(r)

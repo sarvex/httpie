@@ -101,24 +101,23 @@ def get_stream_type(env, args):
 
     """
     if not env.stdout_isatty and not args.prettify:
-        Stream = partial(
+        return partial(
             RawStream,
             chunk_size=RawStream.CHUNK_SIZE_BY_LINE
             if args.stream
-            else RawStream.CHUNK_SIZE
+            else RawStream.CHUNK_SIZE,
         )
     elif args.prettify:
-        Stream = partial(
+        return partial(
             PrettyStream if args.stream else BufferedPrettyStream,
             env=env,
             conversion=Conversion(),
-            formatting=Formatting(env=env, groups=args.prettify,
-                                  color_scheme=args.style),
+            formatting=Formatting(
+                env=env, groups=args.prettify, color_scheme=args.style
+            ),
         )
     else:
-        Stream = partial(EncodedStream, env=env)
-
-    return Stream
+        return partial(EncodedStream, env=env)
 
 
 class BaseStream(object):
@@ -240,8 +239,7 @@ class PrettyStream(EncodedStream):
         for line, lf in iter_lines:
             if b'\0' in line:
                 if first_chunk:
-                    converter = self.conversion.get_converter(self.mime)
-                    if converter:
+                    if converter := self.conversion.get_converter(self.mime):
                         body = bytearray()
                         # noinspection PyAssignmentToLoopOrWithParameter
                         for line, lf in chain([(line, lf)], iter_lines):
