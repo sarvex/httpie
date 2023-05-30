@@ -114,10 +114,7 @@ except ImportError:  # pragma: no cover
         def popitem(self, last=True):
             if not self:
                 raise KeyError('dictionary is empty')
-            if last:
-                key = reversed(self).next()
-            else:
-                key = iter(self).next()
+            key = reversed(self).next() if last else iter(self).next()
             value = self.pop(key)
             return key, value
 
@@ -145,7 +142,7 @@ except ImportError:  # pragma: no cover
 
         def __repr__(self):
             if not self:
-                return '%s()' % (self.__class__.__name__,)
+                return f'{self.__class__.__name__}()'
             return '%s(%r)' % (self.__class__.__name__, self.items())
 
         def copy(self):
@@ -163,10 +160,7 @@ except ImportError:  # pragma: no cover
             if isinstance(other, OrderedDict):
                 if len(self) != len(other):
                     return False
-                for p, q in zip(self.items(), other.items()):
-                    if p != q:
-                        return False
-                return True
+                return all(p == q for p, q in zip(self.items(), other.items()))
             return dict.__eq__(self, other)
 
         def __ne__(self, other):

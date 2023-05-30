@@ -66,19 +66,21 @@ class TestItemParsing:
         assert items.params == {'bob:': 'foo'}
 
     def test_valid_items(self):
-        items = input.parse_items([
-            self.key_value('string=value'),
-            self.key_value('header:value'),
-            self.key_value('list:=["a", 1, {}, false]'),
-            self.key_value('obj:={"a": "b"}'),
-            self.key_value('eh:'),
-            self.key_value('ed='),
-            self.key_value('bool:=true'),
-            self.key_value('file@' + FILE_PATH_ARG),
-            self.key_value('query==value'),
-            self.key_value('string-embed=@' + FILE_PATH_ARG),
-            self.key_value('raw-json-embed:=@' + JSON_FILE_PATH_ARG),
-        ])
+        items = input.parse_items(
+            [
+                self.key_value('string=value'),
+                self.key_value('header:value'),
+                self.key_value('list:=["a", 1, {}, false]'),
+                self.key_value('obj:={"a": "b"}'),
+                self.key_value('eh:'),
+                self.key_value('ed='),
+                self.key_value('bool:=true'),
+                self.key_value(f'file@{FILE_PATH_ARG}'),
+                self.key_value('query==value'),
+                self.key_value(f'string-embed=@{FILE_PATH_ARG}'),
+                self.key_value(f'raw-json-embed:=@{JSON_FILE_PATH_ARG}'),
+            ]
+        )
 
         # Parsed headers
         # `requests.structures.CaseInsensitiveDict` => `dict`
@@ -107,10 +109,12 @@ class TestItemParsing:
                 == FILE_CONTENT)
 
     def test_multiple_file_fields_with_same_field_name(self):
-        items = input.parse_items([
-            self.key_value('file_field@' + FILE_PATH_ARG),
-            self.key_value('file_field@' + FILE_PATH_ARG),
-        ])
+        items = input.parse_items(
+            [
+                self.key_value(f'file_field@{FILE_PATH_ARG}'),
+                self.key_value(f'file_field@{FILE_PATH_ARG}'),
+            ]
+        )
         assert len(items.files['file_field']) == 2
 
     def test_multiple_text_fields_with_same_field_name(self):
@@ -128,30 +132,29 @@ class TestItemParsing:
 
 class TestQuerystring:
     def test_query_string_params_in_url(self, httpbin):
-        r = http('--print=Hhb', 'GET', httpbin.url + '/get?a=1&b=2')
+        r = http('--print=Hhb', 'GET', f'{httpbin.url}/get?a=1&b=2')
         path = '/get?a=1&b=2'
         url = httpbin.url + path
         assert HTTP_OK in r
-        assert 'GET %s HTTP/1.1' % path in r
-        assert '"url": "%s"' % url in r
+        assert f'GET {path} HTTP/1.1' in r
+        assert f'"url": "{url}"' in r
 
     def test_query_string_params_items(self, httpbin):
-        r = http('--print=Hhb', 'GET', httpbin.url + '/get', 'a==1')
+        r = http('--print=Hhb', 'GET', f'{httpbin.url}/get', 'a==1')
         path = '/get?a=1'
         url = httpbin.url + path
         assert HTTP_OK in r
-        assert 'GET %s HTTP/1.1' % path in r
-        assert '"url": "%s"' % url in r
+        assert f'GET {path} HTTP/1.1' in r
+        assert f'"url": "{url}"' in r
 
     def test_query_string_params_in_url_and_items_with_duplicates(self,
                                                                   httpbin):
-        r = http('--print=Hhb', 'GET',
-                 httpbin.url + '/get?a=1&a=1', 'a==1', 'a==1')
+        r = http('--print=Hhb', 'GET', f'{httpbin.url}/get?a=1&a=1', 'a==1', 'a==1')
         path = '/get?a=1&a=1&a=1&a=1'
         url = httpbin.url + path
         assert HTTP_OK in r
-        assert 'GET %s HTTP/1.1' % path in r
-        assert '"url": "%s"' % url in r
+        assert f'GET {path} HTTP/1.1' in r
+        assert f'"url": "{url}"' in r
 
 
 class TestURLshorthand:
@@ -216,7 +219,7 @@ class TestArgumentParser:
 
         assert self.parser.args.method == 'GET'
         assert self.parser.args.url == 'http://example.com/'
-        assert self.parser.args.items == []
+        assert not self.parser.args.items
 
     def test_guess_when_method_not_set(self):
         self.parser.args = argparse.Namespace()
@@ -230,7 +233,7 @@ class TestArgumentParser:
 
         assert self.parser.args.method == 'GET'
         assert self.parser.args.url == 'http://example.com/'
-        assert self.parser.args.items == []
+        assert not self.parser.args.items
 
     def test_guess_when_method_set_but_invalid_and_data_field(self):
         self.parser.args = argparse.Namespace()
@@ -294,12 +297,11 @@ class TestArgumentParser:
 class TestNoOptions:
 
     def test_valid_no_options(self, httpbin):
-        r = http('--verbose', '--no-verbose', 'GET', httpbin.url + '/get')
+        r = http('--verbose', '--no-verbose', 'GET', f'{httpbin.url}/get')
         assert 'GET /get HTTP/1.1' not in r
 
     def test_invalid_no_options(self, httpbin):
-        r = http('--no-war', 'GET', httpbin.url + '/get',
-                 error_exit_ok=True)
+        r = http('--no-war', 'GET', f'{httpbin.url}/get', error_exit_ok=True)
         assert r.exit_status == 1
         assert 'unrecognized arguments: --no-war' in r.stderr
         assert 'GET /get HTTP/1.1' not in r
@@ -310,15 +312,18 @@ class TestIgnoreStdin:
     def test_ignore_stdin(self, httpbin):
         with open(FILE_PATH) as f:
             env = TestEnvironment(stdin=f, stdin_isatty=False)
-            r = http('--ignore-stdin', '--verbose', httpbin.url + '/get',
-                     env=env)
+            r = http('--ignore-stdin', '--verbose', f'{httpbin.url}/get', env=env)
         assert HTTP_OK in r
         assert 'GET /get HTTP' in r, "Don't default to POST."
         assert FILE_CONTENT not in r, "Don't send stdin data."
 
     def test_ignore_stdin_cannot_prompt_password(self, httpbin):
-        r = http('--ignore-stdin', '--auth=no-password', httpbin.url + '/get',
-                 error_exit_ok=True)
+        r = http(
+            '--ignore-stdin',
+            '--auth=no-password',
+            f'{httpbin.url}/get',
+            error_exit_ok=True,
+        )
         assert r.exit_status == ExitStatus.ERROR
         assert 'because --ignore-stdin' in r.stderr
 

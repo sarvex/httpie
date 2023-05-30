@@ -43,7 +43,7 @@ install_requires = [
 ### Conditional dependencies:
 
 # sdist
-if not 'bdist_wheel' in sys.argv:
+if 'bdist_wheel' not in sys.argv:
     try:
         #noinspection PyUnresolvedReferences
         import argparse

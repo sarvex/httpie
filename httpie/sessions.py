@@ -38,10 +38,9 @@ def get_response(requests_session, session_name,
 
         # host:port => host_port
         hostname = hostname.replace(':', '_')
-        path = os.path.join(config_dir,
-                            SESSIONS_DIR_NAME,
-                            hostname,
-                            session_name + '.json')
+        path = os.path.join(
+            config_dir, SESSIONS_DIR_NAME, hostname, f'{session_name}.json'
+        )
 
     session = Session(path)
     session.load()
@@ -133,10 +132,9 @@ class Session(BaseConfigDict):
         stored_attrs = ['value', 'path', 'secure', 'expires']
         self['cookies'] = {}
         for cookie in jar:
-            self['cookies'][cookie.name] = dict(
-                (attname, getattr(cookie, attname))
-                for attname in stored_attrs
-            )
+            self['cookies'][cookie.name] = {
+                attname: getattr(cookie, attname) for attname in stored_attrs
+            }
 
     @property
     def auth(self):
@@ -148,5 +146,5 @@ class Session(BaseConfigDict):
 
     @auth.setter
     def auth(self, auth):
-        assert set(['type', 'username', 'password']) == set(auth.keys())
+        assert {'type', 'username', 'password'} == set(auth.keys())
         self['auth'] = auth

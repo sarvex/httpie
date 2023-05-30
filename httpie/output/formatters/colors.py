@@ -41,18 +41,14 @@ class ColorFormatter(FormatterPlugin):
         except ClassNotFound:
             style_class = Solarized256Style
 
-        if env.colors == 256:
-            fmt_class = Terminal256Formatter
-        else:
-            fmt_class = TerminalFormatter
+        fmt_class = Terminal256Formatter if env.colors == 256 else TerminalFormatter
         self.formatter = fmt_class(style=style_class)
 
     def format_headers(self, headers):
         return pygments.highlight(headers, HTTPLexer(), self.formatter).strip()
 
     def format_body(self, body, mime):
-        lexer = self.get_lexer(mime)
-        if lexer:
+        if lexer := self.get_lexer(mime):
             body = pygments.highlight(body, lexer, self.formatter)
         return body.strip()
 
@@ -71,10 +67,7 @@ def get_lexer(mime):
     else:
         subtype_name, subtype_suffix = subtype.split('+')
         lexer_names.extend([subtype_name, subtype_suffix])
-        mime_types.extend([
-            '%s/%s' % (type_, subtype_name),
-            '%s/%s' % (type_, subtype_suffix)
-        ])
+        mime_types.extend([f'{type_}/{subtype_name}', f'{type_}/{subtype_suffix}'])
     # as a last resort, if no lexer feels responsible, and
     # the subtype contains 'json', take the JSON lexer
     if 'json' in subtype:

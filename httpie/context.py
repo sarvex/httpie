@@ -56,7 +56,7 @@ class Environment(object):
         any of the class attributes for this instance.
 
         """
-        assert all(hasattr(type(self), attr) for attr in kwargs.keys())
+        assert all(hasattr(type(self), attr) for attr in kwargs)
         self.__dict__.update(**kwargs)
 
         # Keyword arguments > stream.encoding > default utf8

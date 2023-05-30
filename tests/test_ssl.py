@@ -21,36 +21,39 @@ CA_BUNDLE = pytest_httpbin.certs.where()
 class TestClientSSLCertHandling(object):
 
     def test_cert_file_not_found(self, httpbin_secure):
-        r = http(httpbin_secure + '/get',
-                 '--verify', CA_BUNDLE,
-                 '--cert', '/__not_found__',
-                 error_exit_ok=True)
+        r = http(
+            f'{httpbin_secure}/get',
+            '--verify',
+            CA_BUNDLE,
+            '--cert',
+            '/__not_found__',
+            error_exit_ok=True,
+        )
         assert r.exit_status == ExitStatus.ERROR
         assert 'No such file or directory' in r.stderr
 
     def test_cert_file_invalid(self, httpbin_secure):
         with pytest.raises(SSLError):
-            http(httpbin_secure + '/get',
-                 '--verify', CA_BUNDLE,
-                 '--cert', __file__)
+            http(f'{httpbin_secure}/get', '--verify', CA_BUNDLE, '--cert', __file__)
 
     def test_cert_ok_but_missing_key(self, httpbin_secure):
         with pytest.raises(SSLError):
-            http(httpbin_secure + '/get',
-                 '--verify', CA_BUNDLE,
-                 '--cert', CLIENT_CERT)
+            http(f'{httpbin_secure}/get', '--verify', CA_BUNDLE, '--cert', CLIENT_CERT)
 
     def test_cert_and_key(self, httpbin_secure):
-        r = http(httpbin_secure + '/get',
-                 '--verify', CA_BUNDLE,
-                 '--cert', CLIENT_CERT,
-                 '--cert-key', CLIENT_KEY)
+        r = http(
+            f'{httpbin_secure}/get',
+            '--verify',
+            CA_BUNDLE,
+            '--cert',
+            CLIENT_CERT,
+            '--cert-key',
+            CLIENT_KEY,
+        )
         assert HTTP_OK in r
 
     def test_cert_pem(self, httpbin_secure):
-        r = http(httpbin_secure + '/get',
-                 '--verify', CA_BUNDLE,
-                 '--cert', CLIENT_PEM)
+        r = http(f'{httpbin_secure}/get', '--verify', CA_BUNDLE, '--cert', CLIENT_PEM)
         assert HTTP_OK in r
 
 
@@ -59,21 +62,21 @@ class TestServerSSLCertHandling(object):
     def test_self_signed_server_cert_by_default_raises_ssl_error(
             self, httpbin_secure):
         with pytest.raises(SSLError):
-            http(httpbin_secure.url + '/get')
+            http(f'{httpbin_secure.url}/get')
 
     def test_verify_no_OK(self, httpbin_secure):
-        r = http(httpbin_secure.url + '/get', '--verify=no')
+        r = http(f'{httpbin_secure.url}/get', '--verify=no')
         assert HTTP_OK in r
 
     def test_verify_custom_ca_bundle_path(
             self, httpbin_secure):
-        r = http(httpbin_secure.url + '/get', '--verify', CA_BUNDLE)
+        r = http(f'{httpbin_secure.url}/get', '--verify', CA_BUNDLE)
         assert HTTP_OK in r
 
     def test_verify_custom_ca_bundle_invalid_path(self, httpbin_secure):
         with pytest.raises(SSLError):
-            http(httpbin_secure.url + '/get', '--verify', '/__not_found__')
+            http(f'{httpbin_secure.url}/get', '--verify', '/__not_found__')
 
     def test_verify_custom_ca_bundle_invalid_bundle(self, httpbin_secure):
         with pytest.raises(SSLError):
-            http(httpbin_secure.url + '/get', '--verify', __file__)
+            http(f'{httpbin_secure.url}/get', '--verify', __file__)

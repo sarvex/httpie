@@ -120,7 +120,7 @@ class Parser(ArgumentParser):
 
         self.env = env
         self.args, no_options = super(Parser, self)\
-            .parse_known_args(args, namespace)
+                .parse_known_args(args, namespace)
 
         if self.args.debug:
             self.args.traceback = True
@@ -139,14 +139,12 @@ class Parser(ArgumentParser):
         if not URL_SCHEME_RE.match(self.args.url):
             scheme = HTTP
 
-            # See if we're using curl style shorthand for localhost (:3000/foo)
-            shorthand = re.match(r'^:(?!:)(\d*)(/?.*)$', self.args.url)
-            if shorthand:
-                port = shorthand.group(1)
-                rest = shorthand.group(2)
-                self.args.url = scheme + 'localhost'
+            if shorthand := re.match(r'^:(?!:)(\d*)(/?.*)$', self.args.url):
+                port = shorthand[1]
+                rest = shorthand[2]
+                self.args.url = f'{scheme}localhost'
                 if port:
-                    self.args.url += ':' + port
+                    self.args.url += f':{port}'
                 self.args.url += rest
             else:
                 self.args.url = scheme + self.args.url
@@ -193,10 +191,7 @@ class Parser(ArgumentParser):
             try:
                 self.args.output_file.truncate()
             except IOError as e:
-                if e.errno == errno.EINVAL:
-                    # E.g. /dev/null on Linux.
-                    pass
-                else:
+                if e.errno != errno.EINVAL:
                     raise
             self.env.stdout = self.args.output_file
             self.env.stdout_isatty = False
@@ -247,7 +242,7 @@ class Parser(ArgumentParser):
                 continue
 
             # --no-option => --option
-            inverted = '--' + option[5:]
+            inverted = f'--{option[5:]}'
             for action in self._actions:
                 if inverted in action.option_strings:
                     setattr(self.args, action.dest, action.default)
@@ -256,8 +251,7 @@ class Parser(ArgumentParser):
                 invalid.append(option)
 
         if invalid:
-            msg = 'unrecognized arguments: %s'
-            self.error(msg % ' '.join(invalid))
+            self.error(f"unrecognized arguments: {' '.join(invalid)}")
 
     def _body_from_file(self, fd):
         """There can only be one source of request data.
@@ -333,8 +327,8 @@ class Parser(ArgumentParser):
             file_fields = list(self.args.files.keys())
             if file_fields != ['']:
                 self.error(
-                    'Invalid file fields (perhaps you meant --form?): %s'
-                    % ','.join(file_fields))
+                    f"Invalid file fields (perhaps you meant --form?): {','.join(file_fields)}"
+                )
 
             fn, fd = self.args.files['']
             self.args.files = {}
@@ -346,7 +340,7 @@ class Parser(ArgumentParser):
                 if mime:
                     content_type = mime
                     if encoding:
-                        content_type = '%s; charset=%s' % (mime, encoding)
+                        content_type = f'{mime}; charset={encoding}'
                     self.args.headers['Content-Type'] = content_type
 
     def _process_output_options(self):
@@ -362,11 +356,11 @@ class Parser(ArgumentParser):
                 else OUTPUT_OPTIONS_DEFAULT_STDOUT_REDIRECTED
             )
 
-        unknown_output_options = set(self.args.output_options) - OUTPUT_OPTIONS
-        if unknown_output_options:
-            self.error(
-                'Unknown output options: %s' % ','.join(unknown_output_options)
-            )
+        if (
+            unknown_output_options := set(self.args.output_options)
+            - OUTPUT_OPTIONS
+        ):
+            self.error(f"Unknown output options: {','.join(unknown_output_options)}")
 
         if self.args.download and OUT_RESP_BODY in self.args.output_options:
             # Response body is always downloaded with --download and it goes
@@ -385,9 +379,8 @@ class Parser(ArgumentParser):
             self.args.prettify = PRETTY_MAP[self.args.prettify]
 
     def _validate_download_options(self):
-        if not self.args.download:
-            if self.args.download_resume:
-                self.error('--continue only works with --download')
+        if not self.args.download and self.args.download_resume:
+            self.error('--continue only works with --download')
         if self.args.download_resume and not (
                 self.args.download and self.args.output_file):
             self.error('--continue requires --output to be specified')
@@ -454,7 +447,6 @@ class KeyValueArgType(object):
 
         class Escaped(str):
             """Represents an escaped character."""
-
         def tokenize(string):
             """Tokenize `string`. There are only two token types - strings
             and escaped characters:
@@ -509,8 +501,7 @@ class KeyValueArgType(object):
                 break
 
         else:
-            raise ArgumentTypeError(
-                u'"%s" is not a valid value' % string)
+            raise ArgumentTypeError(f'"{string}" is not a valid value')
 
         return self.key_value_class(
             key=key, value=value, sep=sep, orig=string)
@@ -528,8 +519,7 @@ class AuthCredentials(KeyValue):
 
     def prompt_password(self, host):
         try:
-            self.value = self._getpass(
-                'http: password for %s@%s: ' % (self.key, host))
+            self.value = self._getpass(f'http: password for {self.key}@{host}: ')
         except (EOFError, KeyboardInterrupt):
             sys.stderr.write('\n')
             sys.exit(0)
@@ -617,11 +607,11 @@ def parse_items(items,
     and `params`.
 
     """
-    headers = []
     data = []
     files = []
     params = []
 
+    headers = []
     for item in items:
         value = item.value
 
@@ -635,7 +625,7 @@ def parse_items(items,
                     value = (os.path.basename(value),
                              BytesIO(f.read()))
             except IOError as e:
-                raise ParseError('"%s": %s' % (item.orig, e))
+                raise ParseError(f'"{item.orig}": {e}')
             target = files
 
         elif item.sep in SEP_GROUP_DATA_ITEMS:
@@ -645,19 +635,17 @@ def parse_items(items,
                     with open(os.path.expanduser(value), 'rb') as f:
                         value = f.read().decode('utf8')
                 except IOError as e:
-                    raise ParseError('"%s": %s' % (item.orig, e))
+                    raise ParseError(f'"{item.orig}": {e}')
                 except UnicodeDecodeError:
                     raise ParseError(
-                        '"%s": cannot embed the content of "%s",'
-                        ' not a UTF8 or ASCII-encoded text file'
-                        % (item.orig, item.value)
+                        f'"{item.orig}": cannot embed the content of "{item.value}", not a UTF8 or ASCII-encoded text file'
                     )
 
             if item.sep in SEP_GROUP_RAW_JSON_ITEMS:
                 try:
                     value = load_json_preserve_order(value)
                 except ValueError as e:
-                    raise ParseError('"%s": %s' % (item.orig, e))
+                    raise ParseError(f'"{item.orig}": {e}')
             target = data
 
         else:
@@ -675,5 +663,5 @@ def readable_file_arg(filename):
     try:
         open(filename, 'rb')
     except IOError as ex:
-        raise ArgumentTypeError('%s: %s' % (filename, ex.args[1]))
+        raise ArgumentTypeError(f'{filename}: {ex.args[1]}')
     return filename

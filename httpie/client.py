@@ -17,7 +17,7 @@ urllib3.disable_warnings()
 
 FORM = 'application/x-www-form-urlencoded; charset=utf-8'
 JSON = 'application/json'
-DEFAULT_UA = 'HTTPie/%s' % __version__
+DEFAULT_UA = f'HTTPie/{__version__}'
 
 
 def get_requests_session():
@@ -34,13 +34,8 @@ def get_response(args, config_dir):
 
     requests_session = get_requests_session()
 
-    if not args.session and not args.session_read_only:
-        kwargs = get_requests_kwargs(args)
-        if args.debug:
-            dump_request(kwargs)
-        response = requests_session.request(**kwargs)
-    else:
-        response = sessions.get_response(
+    if args.session or args.session_read_only:
+        return sessions.get_response(
             requests_session=requests_session,
             args=args,
             config_dir=config_dir,
@@ -48,7 +43,10 @@ def get_response(args, config_dir):
             read_only=bool(args.session_read_only),
         )
 
-    return response
+    kwargs = get_requests_kwargs(args)
+    if args.debug:
+        dump_request(kwargs)
+    return requests_session.request(**kwargs)
 
 
 def dump_request(kwargs):
@@ -59,10 +57,10 @@ def dump_request(kwargs):
 def encode_headers(headers):
     # This allows for unicode headers which is non-standard but practical.
     # See: https://github.com/jakubroztocil/httpie/issues/212
-    return dict(
-        (name, value.encode('utf8') if isinstance(value, str) else value)
+    return {
+        name: value.encode('utf8') if isinstance(value, str) else value
         for name, value in headers.items()
-    )
+    }
 
 
 def get_default_headers(args):
@@ -93,13 +91,7 @@ def get_requests_kwargs(args, base_headers=None):
     data = args.data
     auto_json = data and not args.form
     if args.json or auto_json and isinstance(data, dict):
-        if data:
-            data = json.dumps(data)
-        else:
-            # We need to set data to an empty string to prevent requests
-            # from assigning an empty list to `response.request.data`.
-            data = ''
-
+        data = json.dumps(data) if data else ''
     # Finalize headers.
     headers = get_default_headers(args)
     if base_headers:
@@ -118,23 +110,18 @@ def get_requests_kwargs(args, base_headers=None):
         if args.cert_key:
             cert = cert, args.cert_key
 
-    kwargs = {
+    return {
         'stream': True,
         'method': args.method.lower(),
         'url': args.url,
         'headers': headers,
         'data': data,
-        'verify': {
-            'yes': True,
-            'no': False
-        }.get(args.verify, args.verify),
+        'verify': {'yes': True, 'no': False}.get(args.verify, args.verify),
         'cert': cert,
         'timeout': args.timeout,
         'auth': credentials,
-        'proxies': dict((p.key, p.value) for p in args.proxy),
+        'proxies': {p.key: p.value for p in args.proxy},
         'files': args.files,
         'allow_redirects': args.follow,
         'params': args.params,
     }
-
-    return kwargs

@@ -40,7 +40,7 @@ def no_content_type(headers):
 
 def add_auth(url, auth):
     proto, rest = url.split('://', 1)
-    return proto + '://' + auth + '@' + rest
+    return f'{proto}://{auth}@{rest}'
 
 
 class TestEnvironment(Environment):
